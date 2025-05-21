@@ -120,18 +120,11 @@ try:
     # Ví dụ cho chat (hội thoại)
     chat = model.start_chat(history=[])
 
-    message = [
-        {
-            "role": "system",
-            "content": "bạn là một trợ lý ảo thông minh, hãy trả lời các câu hỏi của người dùng một cách tự nhiên và thân thiện.",
-        },
-        {
-            "role": "user",
-            "content": "thôgng tin về thành phố đà nẵng, việt nam",
-        }
-    ]
+    # Thêm các message vào history
+    chat.add_message("system", "Bạn là một trợ lý ảo thông minh, hãy trả lời các câu hỏi một cách tự nhiên và thân thiện.")
+    chat.add_message("user", "Thông tin về thành phố Đà Nẵng, Việt Nam")
 
-    response = chat.send_message(message, generation_config=generation_config)
+    response = chat.send_message(generation_config=generation_config)
     print(response.text)
     response = chat.send_message("Tôi muốn biết thông tin về thành phố đà nẵng", generation_config=generation_config)
     print(response.text)
