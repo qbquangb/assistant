@@ -1,11 +1,12 @@
 import speech_recognition
-import pyttsx3
 from gtts import gTTS
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 import os
 import pygame
 import re
+import serial
+from time import sleep
 
 def say(robot_brain):
 	tts = gTTS(text = robot_brain, lang="vi")
@@ -35,6 +36,11 @@ def convert(text):
 	# ... (thêm các quy tắc loại bỏ khác tùy thuộc vào cấu trúc Markdown) ...
 	return text
 
+def add_prompt(text):
+	# Thêm prompt vào đầu văn bản
+	prompt = "Bạn là một trợ lý thông minh, hãy trả lời câu hỏi của tôi một cách ngắn gọn và dễ hiểu."
+	return f"{prompt}\n{text}"
+
 generation_config = GenerationConfig(
 	temperature=0.7,
 	max_output_tokens=300
@@ -56,9 +62,12 @@ model = genai.GenerativeModel('gemini-1.5-flash-latest') # Hoặc 'gemini-1.0-pr
 robot_ear = speech_recognition.Recognizer()
 robot_brain = ""
 pygame.mixer.init()
+# Thiết lập kết nối Serial với Arduino
+ser = serial.Serial(port='COM4', baudrate=9600, timeout=0.2)
 
 while True:
 	with speech_recognition.Microphone() as mic:
+		robot_ear.adjust_for_ambient_noise(mic, duration=1)
 		print("Robot: Tôi đang nghe bạn nói...")
 		audio = robot_ear.listen(mic)
 
@@ -71,9 +80,34 @@ while True:
 
 	print("Robot: ...")
 	chat = model.start_chat(history=[])
+
+	if "bật đèn" in you:
+		if ser.in_waiting == 0:
+			ser.write(b'batloa\r')
+			sleep(3)
+			if ser.in_waiting:
+				robot_brain = "Đèn đã được bật."
+			else:
+				robot_brain = "Không thể bật đèn, hãy thử lại."
+		print("Robot: " + robot_brain)
+		say(robot_brain)
+		continue
+		
+	if "tắt đèn" in you:
+		if ser.in_waiting == 0:
+			ser.write(b'tatloa\r')
+			sleep(3)
+			if ser.in_waiting:
+				robot_brain = "Đèn đã được tắt."
+			else:
+				robot_brain = "Không thể tắt đèn, hãy thử lại."
+		print("Robot: " + robot_brain)
+		say(robot_brain)
+		continue
 	
 	if "bye" in you or "tạm biệt" in you:
 		try:
+			you = add_prompt(you)
 			robot_brain = chat.send_message(you, generation_config=generation_config)
 			robot_brain = robot_brain.text
 			robot_brain = convert(robot_brain)
@@ -88,6 +122,7 @@ while True:
 		say(robot_brain)
 		continue
 	try:
+		you = add_prompt(you)
 		robot_brain = chat.send_message(you, generation_config=generation_config)
 		robot_brain = robot_brain.text
 		robot_brain = convert(robot_brain)
@@ -97,6 +132,7 @@ while True:
 	print("Robot: " + robot_brain)
 
 	say(robot_brain)
+	you = None
 	
 
 # from google import genai
