@@ -58,6 +58,7 @@ genai.configure(api_key=api_key)
 # Chọn mô hình (ví dụ: gemini-1.5-flash)
 # Bạn có thể tìm danh sách các mô hình có sẵn trong tài liệu của Google
 model = genai.GenerativeModel('gemini-1.5-flash-latest') # Hoặc 'gemini-1.0-pro', 'gemini-pro'
+chat = model.start_chat(history=[])
 
 robot_ear = speech_recognition.Recognizer()
 robot_brain = ""
@@ -67,7 +68,6 @@ ser = serial.Serial(port='COM4', baudrate=9600, timeout=0.2)
 
 while True:
 	with speech_recognition.Microphone() as mic:
-		robot_ear.adjust_for_ambient_noise(mic, duration=1)
 		print("Robot: Tôi đang nghe bạn nói...")
 		audio = robot_ear.listen(mic)
 
@@ -76,36 +76,21 @@ while True:
 	except:
 		you = ""
 
-	print("You: " + you)
-
-	print("Robot: ...")
-	chat = model.start_chat(history=[])
-
 	if "bật đèn" in you:
-		if ser.in_waiting == 0:
-			ser.write(b'batloa\r')
-			sleep(3)
-			if ser.in_waiting:
-				robot_brain = "Đèn đã được bật."
-			else:
-				robot_brain = "Không thể bật đèn, hãy thử lại."
+		ser.write(b'batloa\r')
+		sleep(3)
+		robot_brain = "Đèn đã được bật."
 		print("Robot: " + robot_brain)
 		say(robot_brain)
-		continue
 		
-	if "tắt đèn" in you:
-		if ser.in_waiting == 0:
-			ser.write(b'tatloa\r')
-			sleep(3)
-			if ser.in_waiting:
-				robot_brain = "Đèn đã được tắt."
-			else:
-				robot_brain = "Không thể tắt đèn, hãy thử lại."
+	elif "tắt đèn" in you:
+		ser.write(b'tatloa\r')
+		sleep(3)
+		robot_brain = "Đèn đã được tắt."
 		print("Robot: " + robot_brain)
 		say(robot_brain)
-		continue
 	
-	if "bye" in you or "tạm biệt" in you:
+	elif "bye" in you or "tạm biệt" in you:
 		try:
 			you = add_prompt(you)
 			robot_brain = chat.send_message(you, generation_config=generation_config)
@@ -120,19 +105,18 @@ while True:
 		robot_brain = "Tôi không nghe bạn nói, hãy thử lại."
 		print("Robot: " + robot_brain)
 		say(robot_brain)
-		continue
-	try:
-		you = add_prompt(you)
-		robot_brain = chat.send_message(you, generation_config=generation_config)
-		robot_brain = robot_brain.text
-		robot_brain = convert(robot_brain)
-	except:
-		robot_brain = "Tôi đang bận, vui lòng thử lại sau."
+	else:
+		try:
+			you = add_prompt(you)
+			robot_brain = chat.send_message(you, generation_config=generation_config)
+			robot_brain = robot_brain.text
+			robot_brain = convert(robot_brain)
+		except:
+			robot_brain = "Tôi đang bận, vui lòng thử lại sau."
 
-	print("Robot: " + robot_brain)
+		print("Robot: " + robot_brain)
 
-	say(robot_brain)
-	you = None
+		say(robot_brain)
 	
 
 # from google import genai
@@ -161,7 +145,7 @@ while True:
 
 # client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
 
-# API_KEY = ""  # @param {type: "string", placeholder: "[your-api-key]", isTemplate: true}
+# API_KEY = os.getenv("GOOGLE_API_KEY_PLUS")
 
 # if not API_KEY or API_KEY == "[your-api-key]":
 #     raise Exception("You must provide an API key to use Vertex AI in express mode.")
@@ -171,7 +155,7 @@ while True:
 # MODEL_ID = "gemini-2.0-flash-001"  # @param {type: "string"}
 
 # response = client.models.generate_content(
-#     model=MODEL_ID, contents="hôm nay là ngày 21 tháng 5 năm 2025"
+#     model=MODEL_ID, contents="vận tốc vũ trụ cấp 1 bằng bao nhiêu."
 # )
 
 # print(response.text)
@@ -213,7 +197,7 @@ while True:
 # 	response = chat.send_message("Tôi muốn biết thông tin về thành phố đà nẵng", generation_config=generation_config)
 # 	print(response.text)
 
-# except Exception as e
+# except Exception as e:
 # 	print(f"An error occurred: {e}")
 # 	if hasattr(e, 'response') and e.response: # Lỗi từ API
 # 		print(f"API Error Details: {e.response}")
@@ -222,3 +206,7 @@ while True:
 # 	#   (Kiểm tra lại API key, hoặc có thể bạn chưa bật API cho dự án nếu dùng Google Cloud project)
 # 	# - google.api_core.exceptions.InvalidArgument: 400 Request payload is invalid.
 # 	#   (Kiểm tra lại cấu trúc prompt hoặc các tham số gửi đi)
+
+# for m in genai.list_models():
+# 	if 'generateContent' in m.supported_generation_methods:
+# 		print(m.name)
