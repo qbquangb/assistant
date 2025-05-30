@@ -82,6 +82,13 @@ while True:
 		robot_brain = "Đèn đã được bật."
 		print("Robot: " + robot_brain)
 		say(robot_brain)
+
+	elif "tắt máy tính" in you:
+		robot_brain = "Em đã tắt máy tính cho anh rồi nhé."
+		print("Robot: " + robot_brain)
+		say(robot_brain)
+		sleep(180)
+		os.system("shutdown /s")
 		
 	elif "tắt đèn" in you:
 		ser.write(b'tatloa\r')
